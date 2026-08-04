@@ -12,7 +12,7 @@ const EPOQUES     = 4;      // passages sur une meme fournee
 const LR   = 1e-4;      // trois fois plus prudent
 const LOT  = 16;        // plus de segments par pas : gradient moins bruite
 const NORME_MAX   = 0.5;    // ecretage du gradient global
-const KL_STOP.    = 0.03;
+const KL_STOP    = 0.03;
 const VIVIER_MAX  = 10;
 const PERIODE_VIVIER = 5;   // fournees entre deux archivages
 

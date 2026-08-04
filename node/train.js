@@ -1,5 +1,3 @@
-// Maitre : distribue les poids, recolte les poids appris par chaque
-// ouvrier, en fait la moyenne, recommence. Un ouvrier par coeur.
 const { Worker } = require('worker_threads');
 const os = require('os');
 const fs = require('fs');
@@ -7,30 +5,32 @@ const path = require('path');
 const { chargeJeu } = require('./charge');
 
 const RACINE = path.resolve(__dirname, '..');
-eval(chargeJeu(RACINE));
+chargeJeu(RACINE);
 
 const N_OUVRIERS = Number(process.env.OUVRIERS) || Math.max(1, os.cpus().length - 1);
 const N_TOURS    = Number(process.env.TOURS) || 5000;
 const PERIODE_SAUVE = 10;
 
-console.log(`ouvriers ${N_OUVRIERS}   entrees ${tailleObservation()}   cache ${N_CACHE}`);
-
 const modele = creeCerveau(1);
-let plat = exporteCerveau(modele).poids;
+const depart = exporteCerveau(modele);
+let plat = depart.poids;
+const META = depart.meta;
 const TAILLE = plat.length;
-console.log(`parametres ${TAILLE}`);
+
+console.log(`ouvriers ${N_OUVRIERS}   entrees ${tailleObservation()}   ` +
+            `cache ${N_CACHE}   parametres ${TAILLE}`);
 
 const ouvriers = [];
 let prets = 0, tour = 0, recus = 0;
-let somme = new Float32Array(TAILLE);
+const somme = new Float32Array(TAILLE);
 let statsTour = [];
 let t0 = Date.now();
 
 function sauve() {
-  const ex = exporteCerveau(importeCerveau(null, plat));
   fs.writeFileSync(path.join(RACINE, 'poids.json'),
-                   JSON.stringify({ ...ex.meta, tour }));
-  fs.writeFileSync(path.join(RACINE, 'poids.bin'), Buffer.from(plat.buffer.slice(0)));
+                   JSON.stringify({ ...META, tour }));
+  fs.writeFileSync(path.join(RACINE, 'poids.bin'),
+                   Buffer.from(plat.buffer, plat.byteOffset, plat.byteLength));
 }
 
 function lanceTour() {
@@ -51,6 +51,8 @@ for (let i = 0; i < N_OUVRIERS; i++) {
   ouvriers.push(w);
 
   w.on('message', (m) => {
+    if (m.erreur) { console.error('ouvrier :', m.erreur); process.exit(1); }
+
     if (m.pret) {
       if (++prets === N_OUVRIERS) lanceTour();
       return;
@@ -61,7 +63,7 @@ for (let i = 0; i < N_OUVRIERS; i++) {
     statsTour.push(m.stats);
 
     if (++recus === N_OUVRIERS) {
-      // moyenne des poids appris par chacun
+      // moyenne de ce que chacun a appris
       for (let k = 0; k < TAILLE; k++) plat[k] = somme[k] / N_OUVRIERS;
 
       const moy = (f) => statsTour.reduce((s, r) => s + f(r), 0) / statsTour.length;
@@ -73,8 +75,7 @@ for (let i = 0; i < N_OUVRIERS; i++) {
         `  perte ${moy(r => r.perte).toFixed(3)}` +
         `  entrop ${moy(r => r.entropie).toFixed(3)}` +
         `  kl ${moy(r => r.kl).toFixed(4)}` +
-        `  ${dec} dec  ${dt.toFixed(1)}s` +
-        `  ${(dec / dt).toFixed(0)} dec/s`);
+        `  ${dec} dec  ${dt.toFixed(1)}s  ${(dec / dt).toFixed(0)} dec/s`);
 
       if (tour % PERIODE_SAUVE === 0) { sauve(); console.log('  poids sauves'); }
       if (tour >= N_TOURS) { sauve(); process.exit(0); }

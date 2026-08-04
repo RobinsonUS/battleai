@@ -1,9 +1,7 @@
-// Un ouvrier : collecte une fournee et applique PPO localement,
-// puis renvoie ses poids. Le maitre les moyenne et redistribue.
 const { parentPort, workerData } = require('worker_threads');
 const { chargeJeu } = require('./charge');
 
-eval(chargeJeu(workerData.racine));
+chargeJeu(workerData.racine);          // plus d'eval
 
 const E = creeEntrainement(workerData.graine);
 
@@ -18,10 +16,14 @@ function imposePoids(plat) {
 }
 
 parentPort.on('message', (msg) => {
-  if (msg.poids) imposePoids(new Float32Array(msg.poids));
-  const r = pasEntrainement(E);
-  const p = poidsPlats();
-  parentPort.postMessage({ stats: r, poids: p.buffer }, [p.buffer]);
+  try {
+    if (msg.poids) imposePoids(new Float32Array(msg.poids));
+    const r = pasEntrainement(E);
+    const p = poidsPlats();
+    parentPort.postMessage({ stats: r, poids: p.buffer }, [p.buffer]);
+  } catch (e) {
+    parentPort.postMessage({ erreur: e.message + '\n' + e.stack });
+  }
 });
 
 parentPort.postMessage({ pret: true, taille: poidsPlats().length });

@@ -127,12 +127,22 @@ function maintenantMs() {
 
 // ---------- copie profonde, pour le vivier ----------
 function copieCerveau(c) {
-  const d = { nE: c.nE, tmp: creeCerveau(1).tmp };
+  const d = { nE: c.nE, tmp: c.tmp };   // les tampons sont reutilisables
   for (const k of CLES) {
     d[k] = { w: Float32Array.from(c[k].w), b: Float32Array.from(c[k].b),
              nIn: c[k].nIn, nOut: c[k].nOut };
   }
   return d;
+}
+
+function importeCerveau(_meta, plat) {
+  const c = creeCerveau(1);
+  let o = 0;
+  for (const k of CLES) {
+    c[k].w.set(plat.subarray(o, o + c[k].w.length)); o += c[k].w.length;
+    c[k].b.set(plat.subarray(o, o + c[k].b.length)); o += c[k].b.length;
+  }
+  return c;
 }
 
 // ---------- serialisation ----------

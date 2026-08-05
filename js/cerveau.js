@@ -111,6 +111,15 @@ function masques(a) {
   };
 }
 
+function meilleureAction(logits, n, masque) {
+  let k = -1, max = -Infinity;
+  for (let i = 0; i < n; i++) {
+    if (masque && !masque[i]) continue;
+    if (logits[i] > max) { max = logits[i]; k = i; }
+  }
+  return k < 0 ? 0 : k;
+}
+
 // tirage softmax, en ignorant les options interdites
 function tireSoftmax(logits, n, rng, masque) {
   let max = -Infinity;
@@ -154,29 +163,39 @@ function agitIA(ag, p, i) {
 
 
     const mq = masques(a);
-    const km = tireSoftmax(t.mouv,  N_MOUV,  ag.rng);
-    const kv = tireSoftmax(t.visee, N_VISEE, ag.rng);
-    const kt = tireSoftmax(t.tir,   2,       ag.rng, mq.tir);
-    const kr = tireSoftmax(t.rech,  2,       ag.rng, mq.rech);
+    const det = (typeof iaDeterministe !== 'undefined') && iaDeterministe;
+    const pick = (l, n, m) => det ? meilleureAction(l, n, m)
+                                  : tireSoftmax(l, n, ag.rng, m);
+    const km = pick(t.mouv,  N_MOUV,  null);
+    const kv = pick(t.visee, N_VISEE, null);
+    const kt = pick(t.tir,   2,       mq.tir);
+    const kr = pick(t.rech,  2,       mq.rech);
+
+    // a court de munitions, on recharge : ne pas le faire n'est
+    // jamais un choix valable, autant l'imposer
+    let forceRech = kr === 1;
+    if (a.munitions === 0 && a.rechargement <= 0 && a.inv[a.slot]) forceRech = true;
 
     const d = DIRS[km];
     ag.derniere = {
       mx: d[0], my: d[1],
-      dAngle: (kv - (N_VISEE - 1) / 2) * PAS_VISEE,
+      // angle absolu fige au moment de la decision : sans cela
+      // l'increment s'appliquerait a chacun des PAS_DECISION pas
+      angle: a.angle + (kv - (N_VISEE - 1) / 2) * PAS_VISEE,
       tire: kt === 1,
       recharger: kr === 1,
       choix: { km, kv, kt, kr },
       masque: mq,
       valeur: t.val[0],
+      recharger: forceRech,
     };
   }
   ag.compteur++;
 
-  // l'action est repetee entre deux decisions
   const d = ag.derniere;
   return {
     mx: d.mx, my: d.my,
-    angle: a.angle + d.dAngle,
+    angle: d.angle,
     slot: a.slot,
     tire: d.tire,
     recharger: d.recharger,

@@ -41,13 +41,17 @@ function avanceSession(s) {
   const kt = tireSoftmax(t.tir,   2,       s.ag[0].rng, mq.tir);
   const kr = tireSoftmax(t.rech,  2,       s.ag[0].rng, mq.rech);
 
+  // meme regle qu'en jeu : a court de munitions, on recharge d'office
+  let recharger = kr === 1;
+  if (a.munitions === 0 && a.rechargement <= 0 && a.inv[a.slot]) recharger = true;
+
   const d = DIRS[km];
   const act0 = {
     mx: d[0], my: d[1],
     angle: a.angle + (kv - (N_VISEE - 1) / 2) * PAS_VISEE,
     slot: a.slot,
     tire: kt === 1,
-    recharger: kr === 1,
+    recharger,
     abandon: false,
   };
 

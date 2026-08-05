@@ -65,7 +65,7 @@ function lanceTour() {
 const depuis = tour;
 for (let i = 0; i < N_OUVRIERS; i++) {
   const w = new Worker(path.join(__dirname, 'ouvrier.js'),
-                       { workerData: { racine: RACINE, graine: 1000 + i * 7919 } });
+                       { workerData: { racine: RACINE, graine: 1000 + i * 7919, tourDepart: tour } });
   ouvriers.push(w);
 
   w.on('message', (m) => {

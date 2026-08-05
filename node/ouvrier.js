@@ -18,7 +18,7 @@ function imposePoids(plat) {
 parentPort.on('message', (msg) => {
   try {
     if (msg.poids) imposePoids(new Float32Array(msg.poids));
-    if (msg.tour) ajusteEntropie(msg.tour);
+    if (msg.tour && typeof ajusteEntropie === 'function') ajusteEntropie(msg.tour);
     const r = pasEntrainement(E);
     const p = poidsPlats();
     parentPort.postMessage({ stats: r, poids: p.buffer }, [p.buffer]);

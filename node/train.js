@@ -17,11 +17,28 @@ let plat = depart.poids;
 const META = depart.meta;
 const TAILLE = plat.length;
 
+// reprise : si des poids existent, on repart de la
+let tour = 0;
+const fBin = path.join(RACINE, 'poids.bin');
+const fJson = path.join(RACINE, 'poids.json');
+if (fs.existsSync(fBin) && fs.existsSync(fJson)) {
+  const meta = JSON.parse(fs.readFileSync(fJson, 'utf8'));
+  const buf = fs.readFileSync(fBin);
+  const anciens = new Float32Array(buf.buffer, buf.byteOffset, buf.length / 4);
+  if (anciens.length === TAILLE) {
+    plat.set(anciens);
+    tour = meta.tour || 0;
+    console.log(`reprise au tour ${tour}`);
+  } else {
+    console.log('poids existants incompatibles, on repart de zero');
+  }
+}
+
 console.log(`ouvriers ${N_OUVRIERS}   entrees ${tailleObservation()}   ` +
             `cache ${N_CACHE}   parametres ${TAILLE}`);
 
 const ouvriers = [];
-let prets = 0, tour = 0, recus = 0;
+let prets = 0, recus = 0;
 const somme = new Float32Array(TAILLE);
 let statsTour = [];
 let t0 = Date.now();
@@ -45,6 +62,7 @@ function lanceTour() {
   }
 }
 
+const depuis = tour;
 for (let i = 0; i < N_OUVRIERS; i++) {
   const w = new Worker(path.join(__dirname, 'ouvrier.js'),
                        { workerData: { racine: RACINE, graine: 1000 + i * 7919 } });
@@ -78,7 +96,7 @@ for (let i = 0; i < N_OUVRIERS; i++) {
         `  ${dec} dec  ${dt.toFixed(1)}s  ${(dec / dt).toFixed(0)} dec/s`);
 
       if (tour % PERIODE_SAUVE === 0) { sauve(); console.log('  poids sauves'); }
-      if (tour >= N_TOURS) { sauve(); process.exit(0); }
+      if (tour >= depuis + N_TOURS) { sauve(); process.exit(0); }
       lanceTour();
     }
   });

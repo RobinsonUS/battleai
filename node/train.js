@@ -59,7 +59,7 @@ function lanceTour() {
   t0 = Date.now();
   for (const w of ouvriers) {
     const copie = Float32Array.from(plat);
-    w.postMessage({ poids: copie.buffer }, [copie.buffer]);
+    w.postMessage({ poids: copie.buffer, tour }, [copie.buffer]);
   }
 }
 

@@ -52,7 +52,6 @@ function sauve() {
 
 function lanceTour() {
   tour++;
-  ajusteEntropie(tour);
   recus = 0;
   somme.fill(0);
   statsTour = [];

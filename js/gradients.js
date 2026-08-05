@@ -10,11 +10,6 @@ const EPS_CLIP  = 0.2;
 const COEF_VAL  = 0.5;
 let COEF_ENT = 0.01;
 
-// l'exploration se reduit au fil de l'entrainement
-function ajusteEntropie(tour) {
-  COEF_ENT = Math.max(0.002, 0.01 * Math.pow(0.5, tour / 300));
-}
-
 // ---------- structure d'accumulation ----------
 function creeGradCouche(m) {
   return { w: new Float32Array(m.w.length), b: new Float32Array(m.b.length),

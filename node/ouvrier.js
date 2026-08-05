@@ -2,6 +2,7 @@ const { parentPort, workerData } = require('worker_threads');
 const { chargeJeu } = require('./charge');
 
 chargeJeu(workerData.racine);          // plus d'eval
+if (typeof ajusteEntropie === 'function') ajusteEntropie(workerData.tourDepart || 0);
 
 const E = creeEntrainement(workerData.graine);
 
